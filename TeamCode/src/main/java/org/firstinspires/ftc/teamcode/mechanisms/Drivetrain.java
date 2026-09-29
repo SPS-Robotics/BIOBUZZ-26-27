@@ -1,98 +1,84 @@
 package org.firstinspires.ftc.teamcode.mechanisms;
 
-import dev.nextftc.hardware.actuators.NextMotor;
-import dev.nextftc.robot.Mechanism;
+import org.firstinspires.ftc.teamcode.pedro.Constants;
 
+import com.pedropathing.drivetrain.DrivePowers;
+import com.pedropathing.follower.Follower;
+import com.pedropathing.follower.ManualDrive;
 import com.pedropathing.ivy.Command;
-import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
-import com.qualcomm.robotcore.hardware.IMU;
+import com.pedropathing.ivy.commands.Commands;
+import com.pedropathing.math.Pose;
 
-import dev.nextftc.hardware.sensors.NextIMU;
+import com.qualcomm.robotcore.hardware.Gamepad;
+import com.qualcomm.robotcore.hardware.HardwareMap;
+
+import dev.nextftc.robot.Mechanism;
 
 public class Drivetrain implements Mechanism {
 
-    private final NextMotor frontLeft = new NextMotor("frontLeft");
-    private final NextMotor frontRight = new NextMotor("frontRight");
-    private final NextMotor backLeft = new NextMotor("backLeft");
-    private final NextMotor backRight = new NextMotor("backRight");
-    private final NextIMU imu = new NextIMU();
+    private Follower follower;
+
+    private double driveHeadingOffset = 0.0;
 
     private double squareInput(double input) {
         return input * input * Math.signum(input);
     }
 
-    public Command resetHeading() { return instant(() -> imu.resetYaw());}
+    public void initialize(HardwareMap hardwareMap) {
+        follower = Constants.create(hardwareMap);
+    }
 
-    public Drivetrain(){
-        frontLeft.setDirection(NextMotor.Direction.REVERSE);
-        backLeft.setDirection(NextMotor.Direction.REVERSE);
 
-        frontLeft.setZeroPowerBehavior(NextMotor.ZeroPowerBehavior.BRAKE);
-        frontRight.setZeroPowerBehavior(NextMotor.ZeroPowerBehavior.BRAKE);
-        backLeft.setZeroPowerBehavior(NextMotor.ZeroPowerBehavior.BRAKE);
-        backRight.setZeroPowerBehavior(NextMotor.ZeroPowerBehavior.BRAKE);
+    public void setPose(Pose pose) {
+        follower.setPose(pose);
+    }
 
-        // assuming rev logo facing up and usb ports facing forwards btw
-        imu.initialize(
-                new IMU.Parameters(
-                        new RevHubOrientationOnRobot(
-                                RevHubOrientationOnRobot.LogoFacingDirection.UP,
-                                RevHubOrientationOnRobot.UsbFacingDirection.FORWARD
-                        )
-                )
+    public Pose getPose() {
+        return follower.pose();
+    }
+
+    public double getAngularVelocity() {
+        return follower.velocity().omega;
+    }
+
+
+    public Command resetHeading() {
+        return Commands.instant(() ->
+                driveHeadingOffset = follower.pose().heading()
         );
     }
-    public void drive(double y, double x, double rx) {
 
-        double frontLeftPower = y + x + rx;
-        double frontRightPower = y - x - rx;
-        double backLeftPower = y - x + rx;
-        double backRightPower = y + x - rx;
 
-        double max = Math.max(
-                Math.max(Math.abs(frontLeftPower), Math.abs(frontRightPower)),
-                Math.max(Math.abs(backLeftPower), Math.abs(backRightPower))
-        );
+    public void startDrive(Gamepad gamepad) {
 
-        if (max > 1.0) {
-            frontLeftPower /= max;
-            frontRightPower /= max;
-            backLeftPower /= max;
-            backRightPower /= max;
+        infinite(() -> {
+
+            double forward = squareInput(-gamepad.left_stick_y);
+            double lateral = squareInput(gamepad.left_stick_x);
+            double turn = squareInput(gamepad.right_stick_x);
+
+            double scalar =
+                    gamepad.left_trigger > 0.05
+                            ? 0.3
+                            : 1.0;
+
+            DrivePowers powers = ManualDrive.fieldCentric(
+                    forward * scalar,
+                    lateral * scalar,
+                    turn * scalar,
+                    follower.pose().heading() - driveHeadingOffset
+            );
+
+            follower.manual(powers);
+
+        }).schedule();
+    }
+
+
+    @Override
+    public void periodic() {
+        if (follower != null) {
+            follower.update();
         }
-
-        frontLeft.setThrottle(frontLeftPower);
-        frontRight.setThrottle(frontRightPower);
-        backLeft.setThrottle(backLeftPower);
-        backRight.setThrottle(backRightPower);
-
-
     }
-
-    public double getHeading() {
-        return imu.getYaw();
-    }
-    public void driveFieldCentric(double y, double x, double rx, double heading, double scalar)
-    {
-        y = squareInput(y);
-        x = squareInput(x);
-        rx = squareInput(rx);
-
-        double rotX =
-                x * Math.cos(-heading)
-                        - y * Math.sin(-heading);
-
-        double rotY =
-                x * Math.sin(-heading)
-                        + y * Math.cos(-heading);
-
-        drive(
-                rotY * scalar,
-                rotX * scalar,
-                rx * scalar
-        );
-    }
-
-
-
 }

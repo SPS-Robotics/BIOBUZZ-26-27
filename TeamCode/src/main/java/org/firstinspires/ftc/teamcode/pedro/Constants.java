@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.pedro;
 
 import com.pedropathing.follower.Follower;
 import com.pedropathing.revhub.drivetrains.MecanumConfig;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.pedropathing.revhub.localizers.PinpointConfig;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
@@ -24,6 +25,23 @@ public class Constants {
                 c.frontRightName.set("frontRight");
                 c.backRightName.set("backRight");
 
+                c.frontLeftDirection.set(
+                        DcMotorSimple.Direction.REVERSE
+                );
+
+                c.backLeftDirection.set(
+                        DcMotorSimple.Direction.REVERSE
+                );
+
+                c.frontRightDirection.set(
+                        DcMotorSimple.Direction.FORWARD
+                );
+
+                c.backRightDirection.set(
+                        DcMotorSimple.Direction.FORWARD
+                );
+
+                c.manualBrakeMode.set(true);
             });
 
     public static PinpointConfig localizerConfig =

@@ -17,17 +17,24 @@ public class MainTeleOp extends NextOpMode {
     public MainTeleOp(Robot robot) {
         super(robot);
         this.robot = robot;
+
+        robot.drivetrain.initialize(hardwareMap);
+        robot.turret.initialize(hardwareMap);
     }
 
     @Override
     public void start(){
         CommandGamepad driver = new CommandGamepad(gamepad1);
 
-        driver.rightTrigger().isOver(0.1).whileTrue(robot.intake.run());
-        driver.rightTrigger().isOver(0.1).onFalse(robot.intake.stop());
+        robot.drivetrain.startDrive(gamepad1);
 
-        driver.cross().whileTrue(robot.intake.outtake());
-        driver.cross().onFalse(robot.intake.stop());
+        driver.rightTrigger().isOver(0.1)
+                .onTrue(robot.intake.run())
+                .onFalse(robot.intake.stop());
+
+        driver.cross()
+                .onTrue(robot.intake.outtake())
+                .onFalse(robot.intake.stop());
 
         driver.rightBumper().onTrue(
                 sequential(
@@ -49,19 +56,4 @@ public class MainTeleOp extends NextOpMode {
 
     }
 
-    @Override
-    public void periodic() {
-
-        double y = -gamepad1.left_stick_y;
-        double x = gamepad1.left_stick_x;
-        double rx = gamepad1.right_stick_x;
-
-        double scalar = 1.0;
-
-        if (gamepad1.left_trigger > 0.05) {
-            scalar = 0.3;
-        }
-
-        robot.drivetrain.driveFieldCentric(y, x , rx, robot.drivetrain.getHeading(), scalar);
-    }
 }

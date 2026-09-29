@@ -24,11 +24,11 @@ public class Intake implements Mechanism {
 
 
     public Command run() {
-        return infinite(() -> motor.setThrottle(INTAKE_POWER));
+        return instant(() -> motor.setThrottle(INTAKE_POWER));
     }
 
     public Command outtake() {
-        return infinite(() -> motor.setThrottle(OUTTAKE_POWER));
+        return instant(() -> motor.setThrottle(OUTTAKE_POWER));
     }
 
     public Command stop() {
