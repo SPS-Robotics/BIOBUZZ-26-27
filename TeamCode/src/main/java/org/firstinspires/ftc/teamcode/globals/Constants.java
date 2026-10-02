@@ -16,6 +16,35 @@ public final class Constants {
         public static double kA = 0.0;
 
         public static double VELOCITY_TOLERANCE = 30.0;
+
+        public static double ENCODER_COUNTS_PER_MOTOR_REV = 28.0;
+    }
+
+    public static class Shooter {
+
+        public static double GRAVITY = 386.1; // inches/s^2
+        public static double TARGET_ENTRY_ANGLE = 0.0;
+
+        public static double GOAL_HEIGHT = 0.0;
+        public static double SHOOTER_EXIT_HEIGHT = 0.0;
+
+        public static double SHOOTER_EXIT_OFFSET = 0.0;
+
+        public static double MIN_LAUNCH_ANGLE =
+                Double.NEGATIVE_INFINITY;
+
+        public static double MAX_LAUNCH_ANGLE =
+                Double.POSITIVE_INFINITY;
+
+
+        public static double HOOD_SERVO_1 = 0.0;
+        public static double HOOD_ANGLE_1 = 0.0;
+        public static double HOOD_SERVO_2 = 0.0;
+        public static double HOOD_ANGLE_2 = 0.0;
+
+
+        public static double FLYWHEEL_RPM_PER_LAUNCH_SPEED = 0.0;
+        public static double FLYWHEEL_RPM_INTERCEPT = 0.0;
     }
 
     public static class Turret {
@@ -40,5 +69,7 @@ public final class Constants {
 
 
         public static double angularVelocitykV = 0.0;
+
+        public static double POSITION_TOLERANCE_TICKS = 0.0;
     }
 }

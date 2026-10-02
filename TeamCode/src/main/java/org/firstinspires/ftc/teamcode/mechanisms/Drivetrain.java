@@ -41,6 +41,14 @@ public class Drivetrain implements Mechanism {
         return follower.velocity().omega;
     }
 
+    public double getVelocityX() {
+        return follower.velocity().vx;
+    }
+
+    public double getVelocityY() {
+        return follower.velocity().vy;
+    }
+
 
     public Command resetHeading() {
         return Commands.instant(() ->

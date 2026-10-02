@@ -18,6 +18,13 @@ public class Robot implements NextRobot {
 
     public final Turret turret = new Turret(drivetrain);
 
+    public boolean readyToShoot() {
+
+        return flywheel.getShotSolution().valid
+                && flywheel.isAtSpeed()
+                && turret.isAtTarget();
+    }
+
     @Override
     public Set<Mechanism> getMechanisms() {
         return Set.of(intake, drivetrain, flywheel, turret);

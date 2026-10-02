@@ -3,54 +3,68 @@ package org.firstinspires.ftc.teamcode.mechanisms;
 import static dev.nextftc.units.Units.Rotations;
 import static dev.nextftc.units.Units.RotationsPerMinute;
 
-import org.firstinspires.ftc.teamcode.globals.Constants;
-
 import com.pedropathing.ivy.Command;
-import com.pedropathing.math.Pose;
+
+import org.firstinspires.ftc.teamcode.globals.Constants;
+import org.firstinspires.ftc.teamcode.globals.RobotState;
+import org.firstinspires.ftc.teamcode.utils.ShooterMath;
 
 import dev.nextftc.hardware.actuators.NextMotor;
 import dev.nextftc.hardware.actuators.NextServo;
 import dev.nextftc.robot.Mechanism;
 
-import org.firstinspires.ftc.teamcode.utils.InterpLUT;
-import org.firstinspires.ftc.teamcode.globals.RobotState;
-
 public class Flywheel implements Mechanism {
 
     private final Drivetrain drivetrain;
 
-    private static final double ENCODER_COUNTS_PER_MOTOR_REV = 28.0;
-
-    private final InterpLUT velocityLUT;
-    private final InterpLUT hoodLUT;
-
     private final NextMotor flywheelMotor1 =
             new NextMotor(
                     "flywheelMotor1",
-                    Rotations.of(1.0 / ENCODER_COUNTS_PER_MOTOR_REV)
+                    Rotations.of(
+                            1.0
+                                    / Constants.Flywheel
+                                    .ENCODER_COUNTS_PER_MOTOR_REV
+                    )
             );
 
     private final NextMotor flywheelMotor2 =
             new NextMotor(
                     "flywheelMotor2",
-                    Rotations.of(1.0 / ENCODER_COUNTS_PER_MOTOR_REV)
+                    Rotations.of(
+                            1.0
+                                    / Constants.Flywheel
+                                    .ENCODER_COUNTS_PER_MOTOR_REV
+                    )
             );
 
     private final NextServo hoodServo =
             new NextServo("hoodServo");
 
-
     private double targetVelocity = 0.0;
     private double targetHoodPosition = 0.0;
+
     private boolean enabled = false;
     private boolean atSpeed = false;
+
+    private boolean tuningMode = false;
+
+    private double tuningRPM = 0.0;
+    private double tuningHoodPosition = 0.0;
+
+    private boolean tuningHoodCommanded = false;
+
+    private ShooterMath.ShotSolution lastShotSolution =
+            ShooterMath.ShotSolution.zero();
 
 
     public Flywheel(Drivetrain drivetrain) {
 
         this.drivetrain = drivetrain;
 
-        flywheelMotor2.follow(flywheelMotor1, NextMotor.Direction.REVERSE);
+        flywheelMotor2.follow(
+                flywheelMotor1,
+                NextMotor.Direction.REVERSE
+        );
 
         flywheelMotor1.setZeroPowerBehavior(
                 NextMotor.ZeroPowerBehavior.FLOAT
@@ -60,7 +74,6 @@ public class Flywheel implements Mechanism {
                 NextMotor.ZeroPowerBehavior.FLOAT
         );
 
-
         flywheelMotor1.getVelocityConstants()
                 .withP(Constants.Flywheel.kP)
                 .withI(Constants.Flywheel.kI)
@@ -68,39 +81,137 @@ public class Flywheel implements Mechanism {
                 .withS(Constants.Flywheel.kS)
                 .withV(Constants.Flywheel.kV)
                 .withA(Constants.Flywheel.kA);
+    }
 
 
-        // PLACE HOLDER VALUESSS
-        velocityLUT = new InterpLUT()
-                .add(40.0, 2000.0)
-                .add(60.0, 2300.0)
-                .add(80.0, 2600.0)
-                .createLUT();
+    public Command toggle() {
 
-        hoodLUT = new InterpLUT()
-                .add(40.0, 0.40)
-                .add(60.0, 0.50)
-                .add(80.0, 0.60)
-                .createLUT();
+        return instant(() -> {
+
+            enabled = !enabled;
+
+            if (!enabled) {
+                atSpeed = false;
+            }
+        });
     }
 
 
     @Override
     public void periodic() {
 
-        double distance = getDistanceToGoal();
+        if (tuningMode) {
 
-        targetVelocity = velocityLUT.get(distance);
-        targetHoodPosition = hoodLUT.get(distance);
-
-        hoodServo.setPosition(targetHoodPosition);
-
-        if (enabled) {
+            targetVelocity =
+                    tuningRPM;
 
 
-            flywheelMotor1.setVelocitySetpoint(RotationsPerMinute.of(targetVelocity)
+            if (tuningHoodCommanded) {
+
+                targetHoodPosition =
+                        tuningHoodPosition;
+
+                hoodServo.setPosition(
+                        targetHoodPosition
+                );
+            }
+
+
+            if (enabled
+                    && targetVelocity > 0.0) {
+
+                flywheelMotor1.setVelocitySetpoint(
+                        RotationsPerMinute.of(
+                                targetVelocity
+                        )
+                );
+
+            } else {
+
+                flywheelMotor1.setThrottle(0.0);
+                atSpeed = false;
+            }
+
+
+            flywheelMotor1.update();
+
+
+            if (enabled
+                    && targetVelocity > 0.0) {
+
+                double currentVelocity =
+                        getCurrentVelocity();
+
+                atSpeed =
+                        Math.abs(
+                                targetVelocity
+                                        - currentVelocity
+                        )
+                                < Constants.Flywheel
+                                .VELOCITY_TOLERANCE;
+
+            } else {
+
+                atSpeed = false;
+            }
+
+
+            return;
+        }
+
+        lastShotSolution =
+                ShooterMath.solve(
+                        drivetrain.getPose(),
+                        RobotState.GOAL_POSE,
+                        drivetrain.getVelocityX(),
+                        drivetrain.getVelocityY(),
+                        RobotState.SOTM
+                );
+
+
+        if (lastShotSolution.valid) {
+
+            if (ShooterMath.hoodCalibrationReady()) {
+
+                targetHoodPosition =
+                        ShooterMath.hoodServoFromLaunchAngle(
+                                lastShotSolution.launchAngle
+                        );
+
+                hoodServo.setPosition(
+                        targetHoodPosition
+                );
+            }
+
+
+            if (ShooterMath.flywheelCalibrationReady()) {
+
+                targetVelocity =
+                        ShooterMath.flywheelRPMFromLaunchSpeed(
+                                lastShotSolution.launchSpeed
+                        );
+
+            } else {
+
+                targetVelocity = 0.0;
+            }
+
+        } else {
+
+            targetVelocity = 0.0;
+            atSpeed = false;
+        }
+
+
+        if (enabled
+                && lastShotSolution.valid
+                && ShooterMath.flywheelCalibrationReady()) {
+
+            flywheelMotor1.setVelocitySetpoint(
+                    RotationsPerMinute.of(
+                            targetVelocity
+                    )
             );
-
 
         } else {
 
@@ -111,28 +222,47 @@ public class Flywheel implements Mechanism {
 
         flywheelMotor1.update();
 
-        if (enabled) {
+
+        if (enabled
+                && lastShotSolution.valid
+                && ShooterMath.flywheelCalibrationReady()) {
 
             double currentVelocity =
                     Math.abs(
                             flywheelMotor1
-                                    .getEncoderVelocity().into(RotationsPerMinute)
+                                    .getEncoderVelocity()
+                                    .into(
+                                            RotationsPerMinute
+                                    )
                     );
 
             atSpeed =
-                    Math.abs(targetVelocity - currentVelocity)
-                            < Constants.Flywheel.VELOCITY_TOLERANCE;
+                    Math.abs(
+                            targetVelocity
+                                    - currentVelocity
+                    )
+                            < Constants.Flywheel
+                            .VELOCITY_TOLERANCE;
+
+        } else {
+
+            atSpeed = false;
         }
     }
 
 
     public Command enable() {
-        return instant(() -> enabled = true);
+
+        return instant(() ->
+                enabled = true
+        );
     }
 
 
     public Command disable() {
+
         return instant(() -> {
+
             enabled = false;
             atSpeed = false;
         });
@@ -140,28 +270,131 @@ public class Flywheel implements Mechanism {
 
 
     public boolean isAtSpeed() {
+
         return atSpeed;
     }
 
 
     public double getTargetVelocity() {
+
         return targetVelocity;
     }
 
-    private double getDistanceToGoal() {
 
-        Pose robotPose = drivetrain.getPose();
+    public double getTargetHoodPosition() {
 
-        double deltaX =
-                RobotState.GOAL_POSE.x() - robotPose.x();
-
-        double deltaY =
-                RobotState.GOAL_POSE.y() - robotPose.y();
-
-        return Math.hypot(deltaX, deltaY);
+        return targetHoodPosition;
     }
+
 
     public double getDistance() {
-        return getDistanceToGoal();
+
+        return lastShotSolution.horizontalDistance;
     }
+
+
+    public ShooterMath.ShotSolution getShotSolution() {
+
+        return lastShotSolution;
+    }
+
+    public double getCurrentVelocity() {
+        return Math.abs(
+                flywheelMotor1
+                        .getEncoderVelocity()
+                        .into(RotationsPerMinute)
+        );
+    }
+
+
+    public void startTuningMode() {
+
+        tuningMode = true;
+
+        tuningRPM = 0.0;
+
+        tuningHoodPosition =
+                hoodServo.getPosition();
+
+        tuningHoodCommanded = false;
+
+        enabled = false;
+        atSpeed = false;
+
+        flywheelMotor1.setThrottle(0.0);
+        flywheelMotor1.update();
+    }
+
+
+    public void stopTuningMode() {
+
+        tuningMode = false;
+
+        enabled = false;
+        atSpeed = false;
+
+        targetVelocity = 0.0;
+
+        flywheelMotor1.setThrottle(0.0);
+        flywheelMotor1.update();
+    }
+
+
+    public void adjustTuningRPM(
+            double change
+    ) {
+
+        tuningRPM =
+                Math.max(
+                        0.0,
+                        tuningRPM + change
+                );
+    }
+
+
+    public void adjustTuningHoodPosition(
+            double change
+    ) {
+
+        tuningHoodPosition =
+                Math.max(
+                        0.0,
+                        Math.min(
+                                1.0,
+                                tuningHoodPosition + change
+                        )
+                );
+
+        tuningHoodCommanded = true;
+    }
+
+
+    public void setTuningFlywheelEnabled(
+            boolean enabled
+    ) {
+
+        this.enabled = enabled;
+
+        if (!enabled) {
+            atSpeed = false;
+        }
+    }
+
+
+    public double getTuningRPM() {
+        return tuningRPM;
+    }
+
+
+    public double getTuningHoodPosition() {
+        return tuningHoodPosition;
+    }
+
+
+    public boolean isFlywheelEnabled() {
+        return enabled;
+    }
+
+
+
 }

@@ -10,6 +10,7 @@ import com.qualcomm.robotcore.hardware.TouchSensor;
 import org.firstinspires.ftc.teamcode.globals.Constants;
 import org.firstinspires.ftc.teamcode.globals.RobotState;
 import org.firstinspires.ftc.teamcode.utils.MathUtils;
+import org.firstinspires.ftc.teamcode.utils.ShooterMath;
 
 import dev.nextftc.control.feedback.PIDCoefficients;
 import dev.nextftc.control.feedback.PIDController;
@@ -58,6 +59,12 @@ public class Turret implements Mechanism {
                 );
     }
 
+    public Command toggleTracking() {
+        return instant(() ->
+                turretTracking = !turretTracking
+        );
+    }
+
     private double getRawTurretPosition() {
 
         return turretRotator
@@ -100,19 +107,32 @@ public class Turret implements Mechanism {
                         -Constants.Turret.CENTRE_OFFSET
                 );
 
-
         double turretAngleRadians =
                 MathUtils.calculateAngleToPose(
                         turretPose,
                         goalPose
                 );
 
+        if (RobotState.SOTM) {
+
+            ShooterMath.ShotSolution shot =
+                    ShooterMath.solve(
+                            robotPose,
+                            goalPose,
+                            drivetrain.getVelocityX(),
+                            drivetrain.getVelocityY(),
+                            true
+                    );
+
+            if (shot.valid) {
+                turretAngleRadians -= shot.turretOffset;
+            }
+        }
 
         double targetTicks =
                 (turretAngleRadians / (2.0 * Math.PI))
                         * Constants.Turret.TICKS_PER_MOTOR_REV
                         * Constants.Turret.TURRET_GEAR_RATIO;
-
 
         return MathUtils.clampValue(
                 targetTicks,
@@ -185,5 +205,17 @@ public class Turret implements Mechanism {
 
 
         turretRotator.setThrottle(power);
+    }
+
+    public boolean isAtTarget() {
+
+        return Math.abs(
+                getTargetPosition()
+                        - getTurretPosition()
+        ) < Constants.Turret.POSITION_TOLERANCE_TICKS;
+    }
+
+    public double getCurrentPosition() {
+        return getTurretPosition();
     }
 }
