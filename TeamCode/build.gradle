@@ -37,4 +37,6 @@ dependencies {
     implementation 'dev.nextftc.v2:robot:0.2.0'
 
     implementation 'com.pedropathing.ivy:pedro:1.0.1'
+
+    testImplementation 'junit:junit:4.13.2'
 }
