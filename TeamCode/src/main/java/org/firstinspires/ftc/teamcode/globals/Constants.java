@@ -5,6 +5,30 @@ public final class Constants {
     private Constants() {
     }
 
+    public static class Drivetrain {
+
+        public static double SLOW_MODE_TRIGGER_THRESHOLD = 0.05;
+        public static double SLOW_MODE_SCALAR = 0.3;
+    }
+
+    public static class Tuning {
+
+        public static double FLYWHEEL_RPM_STEP = 50.0;
+        public static double HOOD_SERVO_STEP = 0.01;
+    }
+
+    public static class Intake {
+
+        public static double INTAKE_POWER = 1.0;
+        public static double OUTTAKE_POWER = -0.6;
+
+        public static double GATE_OPEN = 0.6;
+        public static double GATE_CLOSED = 0.17;
+
+        public static long GATE_OPEN_TIME_MS = 400;
+
+        public static double BALL_SENSOR_THRESHOLD_CM = 0.0;
+    }
     public static class Flywheel {
 
         public static double kP = 0.0;

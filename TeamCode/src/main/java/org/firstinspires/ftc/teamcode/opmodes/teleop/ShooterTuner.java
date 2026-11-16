@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.opmodes.teleop;
 
 import org.firstinspires.ftc.teamcode.Robot;
+import org.firstinspires.ftc.teamcode.globals.Constants;
 
 import dev.nextftc.robot.opmode.NextOpMode;
 import dev.nextftc.robot.opmode.NextTeleop;
@@ -54,7 +55,7 @@ public class ShooterTuner extends NextOpMode {
                 && !previousDpadUp) {
 
             robot.flywheel.adjustTuningRPM(
-                    50.0
+                    Constants.Tuning.FLYWHEEL_RPM_STEP
             );
         }
 
@@ -63,7 +64,7 @@ public class ShooterTuner extends NextOpMode {
                 && !previousDpadDown) {
 
             robot.flywheel.adjustTuningRPM(
-                    -50.0
+                    -Constants.Tuning.FLYWHEEL_RPM_STEP
             );
         }
 

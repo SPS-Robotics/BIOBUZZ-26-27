@@ -27,6 +27,12 @@ public class Turret implements Mechanism {
 
     private boolean wasLimitSwitchPressed = false;
 
+    private boolean homed = false;
+
+    private boolean turretTracking = false;
+
+    private boolean tuningMode = false;
+    private double tuningPower = 0.0;
 
     public Turret(Drivetrain drivetrain) {
         this.drivetrain = drivetrain;
@@ -48,7 +54,6 @@ public class Turret implements Mechanism {
                     )
             );
 
-    private boolean turretTracking = false;
 
     public void initialize(HardwareMap hardwareMap) {
 
@@ -65,11 +70,16 @@ public class Turret implements Mechanism {
         );
     }
 
-    private double getRawTurretPosition() {
+    public double getRawTurretPosition() {
 
         return turretRotator
                 .getEncoderPosition()
                 .into(Radians);
+    }
+
+    public boolean isLimitSwitchPressed() {
+        return magneticLimitSwitch != null
+                && magneticLimitSwitch.isPressed();
     }
 
 
@@ -77,6 +87,10 @@ public class Turret implements Mechanism {
 
         return getRawTurretPosition()
                 + encoderOffset;
+    }
+
+    public boolean isHomed() {
+        return homed;
     }
 
     private void updateHoming() {
@@ -91,6 +105,8 @@ public class Turret implements Mechanism {
             encoderOffset =
                     Constants.Turret.RELOC_POS
                             - getRawTurretPosition();
+
+            homed = true;
         }
 
 
@@ -155,10 +171,44 @@ public class Turret implements Mechanism {
         return instant(() -> turretTracking = false);
     }
 
+    public void startTuningMode() {
+
+        tuningMode = true;
+        turretTracking = false;
+        tuningPower = 0.0;
+    }
+
+    public void stopTuningMode() {
+
+        tuningPower = 0.0;
+        tuningMode = false;
+
+        turretRotator.setThrottle(0.0);
+    }
+
+    public void setTuningPower(double power) {
+
+        tuningPower =
+                MathUtils.clampValue(
+                        power,
+                        -1.0,
+                        1.0
+                );
+    }
+
     @Override
     public void periodic() {
 
         updateHoming();
+
+        if (tuningMode) {
+
+            turretRotator.setThrottle(
+                    tuningPower
+            );
+
+            return;
+        }
 
         double targetPosition =
                 calculateTurretPosition(

@@ -1,6 +1,6 @@
 package org.firstinspires.ftc.teamcode.mechanisms;
 
-import org.firstinspires.ftc.teamcode.pedro.Constants;
+import org.firstinspires.ftc.teamcode.globals.Constants;
 
 import com.pedropathing.drivetrain.DrivePowers;
 import com.pedropathing.follower.Follower;
@@ -14,6 +14,8 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import dev.nextftc.robot.Mechanism;
 
+import com.pedropathing.paths.Path;
+
 public class Drivetrain implements Mechanism {
 
     private Follower follower;
@@ -25,7 +27,10 @@ public class Drivetrain implements Mechanism {
     }
 
     public void initialize(HardwareMap hardwareMap) {
-        follower = Constants.create(hardwareMap);
+        follower =
+                org.firstinspires.ftc.teamcode.pedro.Constants.create(
+                        hardwareMap
+                );
     }
 
 
@@ -66,9 +71,7 @@ public class Drivetrain implements Mechanism {
             double turn = squareInput(gamepad.right_stick_x);
 
             double scalar =
-                    gamepad.left_trigger > 0.05
-                            ? 0.3
-                            : 1.0;
+                    gamepad.left_trigger > Constants.Drivetrain.SLOW_MODE_TRIGGER_THRESHOLD ? Constants.Drivetrain.SLOW_MODE_SCALAR : 1.0;
 
             DrivePowers powers = ManualDrive.fieldCentric(
                     forward * scalar,
@@ -88,5 +91,12 @@ public class Drivetrain implements Mechanism {
         if (follower != null) {
             follower.update();
         }
+    }
+
+    public Command followPath(Path path) {
+        return com.pedropathing.ivy.pedro.PedroCommands.follow(
+                follower,
+                path
+        );
     }
 }

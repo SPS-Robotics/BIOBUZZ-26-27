@@ -6,6 +6,7 @@ import static com.pedropathing.ivy.groups.Groups.sequential;
 import com.pedropathing.ivy.commands.Commands;
 
 import org.firstinspires.ftc.teamcode.Robot;
+import org.firstinspires.ftc.teamcode.globals.Constants;
 import org.firstinspires.ftc.teamcode.globals.RobotState;
 import org.firstinspires.ftc.teamcode.utils.ShooterMath;
 
@@ -25,6 +26,7 @@ public class MainTeleOp extends NextOpMode {
 
         robot.drivetrain.initialize(hardwareMap);
         robot.turret.initialize(hardwareMap);
+        robot.intake.initialize(hardwareMap);
     }
 
     @Override
@@ -81,7 +83,7 @@ public class MainTeleOp extends NextOpMode {
                 robot.flywheel.getShotSolution();
 
         telemetry.addData(
-                "SOTM",
+                "sotm",
                 RobotState.SOTM
         );
 
@@ -157,6 +159,33 @@ public class MainTeleOp extends NextOpMode {
         telemetry.addData(
                 "Tangential Velocity",
                 shot.tangentialRobotVelocity
+        );
+
+        telemetry.addData("Turret homed", robot.turret.isHomed());
+
+        telemetry.addData(
+                "Left Ball",
+                robot.intake.isLeftBallPresent()
+        );
+
+        telemetry.addData(
+                "Right Ball",
+                robot.intake.isRightBallPresent()
+        );
+
+        telemetry.addData(
+                "Storage Full",
+                robot.intake.isFull()
+        );
+
+        telemetry.addData(
+                "Left Sensor cm",
+                robot.intake.getLeftBallDistanceCm()
+        );
+
+        telemetry.addData(
+                "Right Sensor cm",
+                robot.intake.getRightBallDistanceCm()
         );
 
         telemetry.update();
