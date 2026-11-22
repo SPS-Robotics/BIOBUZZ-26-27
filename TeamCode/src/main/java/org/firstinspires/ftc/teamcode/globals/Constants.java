@@ -79,10 +79,10 @@ public final class Constants {
 
         public static double RELOC_POS = 0.0;
 
-        public static double TICKS_PER_MOTOR_REV = 0.0;
+        public static double TICKS_PER_MOTOR_REV = 28.0;
 
 
-        public static double TURRET_GEAR_RATIO = 0.0;
+        public static double TURRET_GEAR_RATIO = 59.42;
 
 
         public static double MIN_TICKS = 0.0;
