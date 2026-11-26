@@ -4,6 +4,7 @@ import static dev.nextftc.units.Units.Radians;
 
 import com.pedropathing.ivy.Command;
 import com.pedropathing.math.Pose;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 
@@ -45,6 +46,8 @@ public class Turret implements Mechanism {
     private final NextMotor turretRotator =
             new NextMotor("turretRotator");
 
+    private DcMotorEx turretEncoder;
+
     private final PIDController controller =
             new PIDController(
                     new PIDCoefficients(
@@ -57,24 +60,35 @@ public class Turret implements Mechanism {
 
     public void initialize(HardwareMap hardwareMap) {
 
-        magneticLimitSwitch =
-                hardwareMap.get(
-                        TouchSensor.class,
-                        "magneticLimitSwitch"
-                );
-    }
+        magneticLimitSwitch = hardwareMap.tryGet(
+                TouchSensor.class,
+                "magneticLimitSwitch"
+        );
 
-    public Command toggleTracking() {
-        return instant(() ->
-                turretTracking = !turretTracking
+        turretEncoder = hardwareMap.get(
+                DcMotorEx.class,
+                "turretRotator"
         );
     }
 
-    public double getRawTurretPosition() {
 
-        return turretRotator
-                .getEncoderPosition()
-                .into(Radians);
+    public Command toggleTracking() {
+        return instant(() -> {
+            if (turretTracking) {
+                turretTracking = false;
+            } else {
+                turretTracking =
+                        homed
+                                && Constants.Turret.MIN_TICKS
+                                < Constants.Turret.MAX_TICKS
+                                && Constants.Turret.kP > 0.0;
+            }
+        });
+    }
+
+
+    public double getRawTurretPosition() {
+        return turretEncoder.getCurrentPosition();
     }
 
     public boolean isLimitSwitchPressed() {
@@ -92,6 +106,23 @@ public class Turret implements Mechanism {
     public boolean isHomed() {
         return homed;
     }
+
+
+    public void setManualHome() {
+        turretTracking = false;
+        turretRotator.setThrottle(0.0);
+
+        encoderOffset =
+                Constants.Turret.RELOC_POS
+                        - getRawTurretPosition();
+
+        homed = true;
+    }
+
+    public boolean isTracking() {
+        return turretTracking;
+    }
+
 
     private void updateHoming() {
 
@@ -163,9 +194,17 @@ public class Turret implements Mechanism {
         );
     }
 
+
     public Command enableTracking() {
-        return instant(() -> turretTracking = true);
+        return instant(() -> {
+            turretTracking =
+                    homed
+                            && Constants.Turret.MIN_TICKS
+                            < Constants.Turret.MAX_TICKS
+                            && Constants.Turret.kP > 0.0;
+        });
     }
+
 
     public Command disableTracking() {
         return instant(() -> turretTracking = false);
@@ -249,7 +288,7 @@ public class Turret implements Mechanism {
         }
 
 
-        if (!turretTracking) {
+        if (!turretTracking || !homed) {
             power = 0.0;
         }
 

@@ -32,9 +32,9 @@ repositories {
 dependencies {
     implementation project(':FtcRobotController')
 
-    implementation 'dev.nextftc.v2:control:0.2.0'
-    implementation 'dev.nextftc.v2:hardware:0.2.0'
-    implementation 'dev.nextftc.v2:robot:0.2.0'
+    implementation 'dev.nextftc.v2:control:0.2.1'
+    implementation 'dev.nextftc.v2:hardware:0.2.1'
+    implementation 'dev.nextftc.v2:robot:0.2.1'
 
     implementation 'com.pedropathing.ivy:pedro:1.1.1'
 

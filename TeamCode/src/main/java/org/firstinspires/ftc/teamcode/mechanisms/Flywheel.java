@@ -59,12 +59,16 @@ public class Flywheel implements Mechanism {
 
     public Flywheel(Drivetrain drivetrain) {
 
+
         this.drivetrain = drivetrain;
+
+        flywheelMotor1.setDirection(NextMotor.Direction.REVERSE);
 
         flywheelMotor2.follow(
                 flywheelMotor1,
                 NextMotor.Direction.REVERSE
         );
+
 
         flywheelMotor1.setZeroPowerBehavior(
                 NextMotor.ZeroPowerBehavior.FLOAT

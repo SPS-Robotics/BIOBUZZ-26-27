@@ -65,17 +65,15 @@ public class Intake implements Mechanism {
 
     public void initialize(HardwareMap hardwareMap) {
 
-        leftBallSensor =
-                hardwareMap.get(
-                        RevColorSensorV3.class,
-                        "leftBallSensor"
-                );
+        leftBallSensor = hardwareMap.tryGet(
+                RevColorSensorV3.class,
+                "leftBallSensor"
+        );
 
-        rightBallSensor =
-                hardwareMap.get(
-                        RevColorSensorV3.class,
-                        "rightBallSensor"
-                );
+        rightBallSensor = hardwareMap.tryGet(
+                RevColorSensorV3.class,
+                "rightBallSensor"
+        );
     }
 
     private boolean isBallPresent(RevColorSensorV3 sensor)
@@ -113,6 +111,25 @@ public class Intake implements Mechanism {
     public Command closeGate() {
         return instant(() -> gateServo.setPosition(Constants.Intake.GATE_CLOSED));
     }
+
+
+    public void setManualControls(boolean intake, boolean reverse, boolean feed) {
+
+        if (reverse) {
+            motor.setThrottle(Constants.Intake.OUTTAKE_POWER);
+            gateServo.setPosition(Constants.Intake.GATE_CLOSED);
+        } else if (feed) {
+            gateServo.setPosition(Constants.Intake.GATE_OPEN);
+            motor.setThrottle(Constants.Intake.INTAKE_POWER);
+        } else if (intake) {
+            gateServo.setPosition(Constants.Intake.GATE_CLOSED);
+            motor.setThrottle(Constants.Intake.INTAKE_POWER);
+        } else {
+            motor.setThrottle(0.0);
+            gateServo.setPosition(Constants.Intake.GATE_CLOSED);
+        }
+    }
+
 
     @Override
     public void periodic() {

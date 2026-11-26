@@ -1,12 +1,7 @@
+
 package org.firstinspires.ftc.teamcode.opmodes.teleop;
 
-import static com.pedropathing.ivy.groups.Groups.parallel;
-import static com.pedropathing.ivy.groups.Groups.sequential;
-
-import com.pedropathing.ivy.commands.Commands;
-
 import org.firstinspires.ftc.teamcode.Robot;
-import org.firstinspires.ftc.teamcode.globals.Constants;
 import org.firstinspires.ftc.teamcode.globals.RobotState;
 import org.firstinspires.ftc.teamcode.utils.ShooterMath;
 
@@ -14,11 +9,14 @@ import dev.nextftc.robot.opmode.NextOpMode;
 import dev.nextftc.robot.opmode.NextTeleop;
 import dev.nextftc.robot.triggers.CommandGamepad;
 
-
 @NextTeleop(name = "BIOBUZZ Teleop")
 public class MainTeleOp extends NextOpMode {
 
     private final Robot robot;
+    private boolean previousDpadRight = false;
+    private boolean started = false;
+
+    private boolean previousDpadLeft = false;
 
     public MainTeleOp(Robot robot) {
         super(robot);
@@ -30,33 +28,18 @@ public class MainTeleOp extends NextOpMode {
     }
 
     @Override
-    public void start(){
+    public void start() {
         RobotState.SOTM = false;
+        RobotState.selectAlliance(RobotState.alliance);
+
+        previousDpadRight = gamepad1.dpad_right;
+
+        previousDpadLeft = gamepad1.dpad_left;
+
         CommandGamepad driver = new CommandGamepad(gamepad1);
 
         robot.drivetrain.startDrive(gamepad1);
-
-        driver.rightTrigger().isOver(0.1)
-                .onTrue(robot.intake.run())
-                .onFalse(robot.intake.stop());
-
-        driver.cross()
-                .onTrue(robot.intake.outtake())
-                .onFalse(robot.intake.stop());
-
-        driver.rightBumper().onTrue(
-                sequential(
-                        robot.intake.openGate(),
-                        robot.intake.run()
-                )
-        );
-
-        driver.rightBumper().onFalse(
-                parallel(
-                        robot.intake.stop(),
-                        robot.intake.closeGate()
-                )
-        );
+        robot.intake.setManualControls(false, false, false);
 
         driver.triangle()
                 .onTrue(robot.turret.toggleTracking());
@@ -64,131 +47,83 @@ public class MainTeleOp extends NextOpMode {
         driver.circle()
                 .onTrue(robot.flywheel.toggle());
 
-        // reset heading for feild centric view
-        driver.start().onTrue(robot.drivetrain.resetHeading());
+        driver.start()
+                .onTrue(robot.drivetrain.resetHeading());
 
-        driver.square().onTrue(
-                Commands.instant(() ->
-                        RobotState.SOTM = !RobotState.SOTM
-                )
-        );
-
-
+        started = true;
     }
 
     @Override
     public void periodic() {
 
-        ShooterMath.ShotSolution shot =
-                robot.flywheel.getShotSolution();
+        if (!started) {
+            return;
+        }
 
-        telemetry.addData(
-                "sotm",
-                RobotState.SOTM
+        robot.intake.setManualControls(
+                gamepad1.right_trigger > 0.1,
+                gamepad1.cross,
+                gamepad1.right_bumper
         );
 
+        if (gamepad1.dpad_up) {
+            RobotState.selectAlliance(
+                    RobotState.Alliance.RED
+            );
+        } else if (gamepad1.dpad_down) {
+            RobotState.selectAlliance(
+                    RobotState.Alliance.BLUE
+            );
+        }
+
+
+        if (gamepad1.dpad_left && !previousDpadLeft) {
+            robot.turret.setManualHome();
+        }
+
+        previousDpadLeft = gamepad1.dpad_left;
+
+
+        if (gamepad1.dpad_right && !previousDpadRight) {
+            RobotState.toggleCell();
+        }
+
+        previousDpadRight = gamepad1.dpad_right;
+
+        telemetry.addData("Alliance", RobotState.alliance);
+        telemetry.addData("HIVE Cell", RobotState.activeCell + 1);
+        telemetry.addData("Target Configured", RobotState.hasTarget());
+        telemetry.addData("Turret Homed", robot.turret.isHomed());
         telemetry.addData(
-                "Shot Valid",
-                shot.valid
+                "Turret Tracking",
+                robot.turret.isTracking()
         );
 
-        telemetry.addData(
-                "Ready To Shoot",
-                robot.readyToShoot()
-        );
+        telemetry.addData("Turret Position", robot.turret.getTurretPosition());
+        telemetry.addData("Current RPM", robot.flywheel.getCurrentVelocity());
+        telemetry.addData("Target RPM", robot.flywheel.getTargetVelocity());
 
-        telemetry.addData(
-                "Distance",
-                shot.horizontalDistance
-        );
+        if (RobotState.hasTarget()) {
+            ShooterMath.ShotSolution shot =
+                    robot.flywheel.getShotSolution();
 
-        telemetry.addData(
-                "Launch Angle",
-                Math.toDegrees(
-                        shot.launchAngle
-                )
-        );
+            telemetry.addData("Shot Valid", shot.valid);
+            telemetry.addData("Ready To Shoot", robot.readyToShoot());
+            telemetry.addData("Distance", shot.horizontalDistance);
+            telemetry.addData("Launch Angle",
+                    Math.toDegrees(shot.launchAngle));
+            telemetry.addData("Launch Speed", shot.launchSpeed);
+            telemetry.addData("Hood Position",
+                    robot.flywheel.getTargetHoodPosition());
+            telemetry.addData("Turret Target",
+                    robot.turret.getTargetPosition());
+        }
 
-        telemetry.addData(
-                "Launch speed",
-                shot.launchSpeed
-        );
-
-        telemetry.addData(
-                "tof",
-                shot.timeOfFlight
-        );
-
-        telemetry.addData(
-                "Target RPM",
-                robot.flywheel.getTargetVelocity()
-        );
-
-        telemetry.addData(
-                "Current RPM",
-                robot.flywheel.getCurrentVelocity()
-        );
-
-        telemetry.addData(
-                "Hood Position",
-                robot.flywheel.getTargetHoodPosition()
-        );
-
-        telemetry.addData(
-                "Turret Target",
-                robot.turret.getTargetPosition()
-        );
-
-        telemetry.addData(
-                "Turret pos",
-                robot.turret.getTurretPosition()
-        );
-
-        telemetry.addData(
-                "TurretOffset Degrees",
-                Math.toDegrees(
-                        shot.turretOffset
-                )
-        );
-
-        telemetry.addData(
-                "Radial Velocity",
-                shot.radialRobotVelocity
-        );
-
-        telemetry.addData(
-                "Tangential Velocity",
-                shot.tangentialRobotVelocity
-        );
-
-        telemetry.addData("Turret homed", robot.turret.isHomed());
-
-        telemetry.addData(
-                "Left Ball",
-                robot.intake.isLeftBallPresent()
-        );
-
-        telemetry.addData(
-                "Right Ball",
-                robot.intake.isRightBallPresent()
-        );
-
-        telemetry.addData(
-                "Storage Full",
-                robot.intake.isFull()
-        );
-
-        telemetry.addData(
-                "Left Sensor cm",
-                robot.intake.getLeftBallDistanceCm()
-        );
-
-        telemetry.addData(
-                "Right Sensor cm",
-                robot.intake.getRightBallDistanceCm()
-        );
+        telemetry.addData("Intake",
+                gamepad1.right_trigger > 0.1);
+        telemetry.addData("Feeding", gamepad1.right_bumper);
+        telemetry.addData("Reverse", gamepad1.cross);
 
         telemetry.update();
     }
-
 }

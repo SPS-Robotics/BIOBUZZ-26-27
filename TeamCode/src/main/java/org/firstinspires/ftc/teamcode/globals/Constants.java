@@ -22,8 +22,8 @@ public final class Constants {
         public static double INTAKE_POWER = 1.0;
         public static double OUTTAKE_POWER = -0.6;
 
-        public static double GATE_OPEN = 0.6;
-        public static double GATE_CLOSED = 0.17;
+        public static double GATE_OPEN = 0.5;
+        public static double GATE_CLOSED = 0;
 
         public static long GATE_OPEN_TIME_MS = 400;
 
@@ -89,7 +89,7 @@ public final class Constants {
         public static double MAX_TICKS = 0.0;
 
         public static double CENTRE_OFFSET = 0.0;
-        public static double ZERO_ANGLE_OFFSET = Math.PI;
+        public static double ZERO_ANGLE_OFFSET = 0;
 
 
         public static double angularVelocitykV = 0.0;
