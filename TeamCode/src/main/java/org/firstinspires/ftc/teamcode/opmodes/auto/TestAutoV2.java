@@ -34,12 +34,6 @@ import dev.nextftc.robot.opmode.NextOpMode;
 
 @NextAutonomous(name = "Test AutoV2", preselectTeleop = "BIOBUZZ Teleop")
 public class TestAutoV2 extends NextOpMode {
-
-    // max time to wait for flywheel + turret before shooting anyway
-    private static final double SPIN_UP_TIMEOUT_MS = 2000;
-    // how long the gate stays open and the intake feedsthi
-    private static final double FEED_TIME_MS = 1500;
-
     private final Robot robot;
 
 
