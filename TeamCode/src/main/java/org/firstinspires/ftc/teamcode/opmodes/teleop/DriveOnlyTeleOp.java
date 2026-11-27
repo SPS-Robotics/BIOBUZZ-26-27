@@ -51,6 +51,8 @@ public class DriveOnlyTeleOp extends LinearOpMode {
                 DcMotor.class, "flywheelMotor2"
         );
 
+
+
         double maxShooterPower = 1.0;
         double shooterPower = 0.0;
         ElapsedTime shooterTimer = new ElapsedTime();
@@ -104,9 +106,9 @@ public class DriveOnlyTeleOp extends LinearOpMode {
         try {
             while (opModeIsActive()) {
 
-                double y = -gamepad1.left_stick_y;
+                double y = gamepad1.left_stick_y;
                 double x = -gamepad1.left_stick_x;
-                double rx = -gamepad1.right_stick_x;
+                double rx = -0.5 * gamepad1.right_stick_x;
 
                 double denominator = Math.max(
                         Math.abs(y) + Math.abs(x) + Math.abs(rx),
@@ -163,20 +165,26 @@ public class DriveOnlyTeleOp extends LinearOpMode {
                 double dt = Math.min(shooterTimer.seconds(), 0.1);
                 shooterTimer.reset();
 
-                if (flywheelMotor1 != null && flywheelMotor2 != null) {
-
-                    if (gamepad1.left_bumper) {
+                // if (flywheelMotor1 != null && flywheelMotor2 != null) {
+                    if (gamepad1.left_bumper && gamepad1.square) {
+                        shooterPower = 0.0;
+                    }
+                    else if (gamepad1.left_bumper) {
                         shooterPower = Math.min(
                                 maxShooterPower,
                                 shooterPower + dt * 0.5
                         );
-                    } else {
+                        // } else {
+                        //    shooterPower = 0.0;
+                        // }
+                    }
+                    else if (gamepad1.square) {
                         shooterPower = 0.0;
                     }
-
                     flywheelMotor1.setPower(shooterPower);
                     flywheelMotor2.setPower(shooterPower);
-                }
+
+
 
                 telemetry.addData("Shooter Power", shooterPower);
                 telemetry.addData("Intake", gamepad1.right_trigger > 0.1);
